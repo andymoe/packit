@@ -69,5 +69,42 @@ func testFileExists(t *testing.T, context spec.G, it spec.S) {
 				})
 			})
 		})
+
+		context("when we are testing for a directory", func() {
+			var subDir = filepath.Join(dirPath, "sub-dir")
+			context("and a directory exists", func() {
+				it("returns true", func() {
+					Expect(os.Mkdir(subDir, os.ModePerm)).To(Succeed())
+					Expect(fs.FileExists(dirPath)).To(BeTrue())
+				})
+			})
+			context("when the directory does not exist", func() {
+				it.Before(func() {
+					Expect(os.RemoveAll(dirPath)).To(Succeed())
+				})
+
+				it("returns false", func() {
+					Expect(fs.FileExists(dirPath)).To(BeFalse())
+				})
+			})
+
+			context("when the directory cannot be read", func() {
+				it.Before(func() {
+					Expect(os.Chmod(dirPath, 0000)).To(Succeed())
+				})
+
+				it.After(func() {
+					Expect(os.Chmod(dirPath, os.ModePerm)).To(Succeed())
+				})
+
+				// With this setup we keep getting nil error which I don't understand.
+				// I'm clearly missing something.
+				it("returns false and an error", func() {
+					exits, err := fs.FileExists(subDir)
+					Expect(err.Error()).To(ContainSubstring("<syscall.Errno>0xd"))
+					Expect(exits).To(BeFalse())
+				})
+			})
+		})
 	})
 }
